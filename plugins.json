@@ -1,0 +1,23 @@
+[
+    {
+        "iconUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2f/Korduene_Logo.png",
+        "fileHash": "sha256-40f54b6727500ec98e51e7ac16380645b41399474c4bd640a9bde1ff0a590a43",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/Lynx3272/TurkAnimePlugins",
+        "fileSize": 24122,
+        "status": 1,
+        "language": "tr",
+        "authors": [
+            "Lynx3272"
+        ],
+        "tvTypes": [
+            "Anime",
+            "AnimeMovie"
+        ],
+        "version": 2,
+        "internalName": "TurkAnime",
+        "description": "TurkAnime anime arama ve katalog eklentisi",
+        "url": "https://raw.githubusercontent.com/Lynx3272/TurkAnimePlugins/builds/TurkAnime.cs3",
+        "name": "TurkAnime"
+    }
+]

@@ -1,0 +1,8 @@
+{
+  "name": "TurkAnime Repository",
+  "description": "Kişisel TurkAnime CloudStream eklenti deposu",
+  "manifestVersion": 1,
+  "pluginLists": [
+    "https://raw.githubusercontent.com/Lynx3272/TurkAnimePlugins/builds/plugins.json"
+  ]
+}
