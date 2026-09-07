@@ -1,6 +1,5 @@
 package com.example
 
-import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.SearchResponse
@@ -43,7 +42,7 @@ data class JikanEpisode(
 
 class TurkAnimeProvider : MainAPI() {
 
-    override var mainUrl = "https://api.jikan.moe/v4"
+    override var mainUrl = ProviderConfig.testApiBaseUrl
     override var name = "Turk Anime"
 
     override val supportedTypes = setOf(
@@ -54,11 +53,18 @@ class TurkAnimeProvider : MainAPI() {
     override var lang = "tr"
     override val hasMainPage = false
 
+    private suspend fun refreshConfig() {
+        ProviderConfig.refresh()
+        mainUrl = ProviderConfig.testApiBaseUrl
+    }
+
     override suspend fun search(query: String): List<SearchResponse> {
 
         if (query.isBlank()) {
             return emptyList()
         }
+
+        refreshConfig()
 
         val encodedQuery = URLEncoder.encode(
             query.trim(),
@@ -88,6 +94,8 @@ class TurkAnimeProvider : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
 
+        refreshConfig()
+
         val malId = url.removePrefix("jikan:")
 
         val animeResponse = app.get(
@@ -105,7 +113,9 @@ class TurkAnimeProvider : MainAPI() {
         )
 
         val episodes = episodeData.data
-            .sortedBy { it.episode ?: Int.MAX_VALUE }
+            .sortedBy {
+                it.episode ?: Int.MAX_VALUE
+            }
             .mapNotNull { episode ->
 
                 val episodeNumber =
@@ -128,10 +138,11 @@ class TurkAnimeProvider : MainAPI() {
             this.posterUrl =
                 anime.images?.jpg?.image_url
 
-            this.plot = anime.synopsis
+            this.plot =
+                anime.synopsis
 
             this.episodes = mutableMapOf(
-                DubStatus.Subbed to episodes
+                com.lagradost.cloudstream3.DubStatus.Subbed to episodes
             )
         }
     }
