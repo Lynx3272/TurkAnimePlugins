@@ -14,13 +14,9 @@ class TurkAnimeProvider : MainAPI() {
     )
 
     override var lang = "tr"
-
     override val hasMainPage = true
 
     override suspend fun search(query: String): List<SearchResponse> {
-        // Şimdilik boş.
-        // Bir sonraki adımda izinli/test kaynağımızın
-        // gerçek arama yapısını burada bağlayacağız.
         return emptyList()
     }
 }
