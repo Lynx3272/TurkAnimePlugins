@@ -40,6 +40,8 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Set repository name
+        run: echo "GITHUB_REPOSITORY=Lynx3272/TurkAnimePlugins" >> "$GITHUB_ENV"
       - name: Build Plugins
         run: |
           cd "$GITHUB_WORKSPACE/src"
