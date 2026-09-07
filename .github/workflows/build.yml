@@ -45,6 +45,7 @@ jobs:
       - name: Build Plugins
         run: |
           cd "$GITHUB_WORKSPACE/src"
+          export GITHUB_REPOSITORY="Lynx3272/TurkAnimePlugins"
           chmod +x gradlew
           ./gradlew make makePluginsJson
 
