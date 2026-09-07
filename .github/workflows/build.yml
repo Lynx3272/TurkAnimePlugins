@@ -51,6 +51,7 @@ jobs:
 
           find . -type f -name "*.cs3" -exec cp {} "$GITHUB_WORKSPACE/builds/" \;
           cp build/plugins.json "$GITHUB_WORKSPACE/builds/"
+          sed -i "s#https://github.com/user/repo#https://github.com/Lynx3272/TurkAnimePlugins#g; s#https://raw.githubusercontent.com/user/repo/builds/TurkAnime.cs3#https://raw.githubusercontent.com/Lynx3272/TurkAnimePlugins/builds/TurkAnime.cs3#g" "$GITHUB_WORKSPACE/builds/plugins.json"
 
       - name: Push builds
         run: |
