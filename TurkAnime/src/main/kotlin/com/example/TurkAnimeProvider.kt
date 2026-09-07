@@ -1,48 +1,48 @@
 package com.example
 
-import com.lagradost.cloudstream3.LoadResponse
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.newAnimeLoadResponse
 import com.lagradost.cloudstream3.newAnimeSearchResponse
-import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
-import java.net.URLEncoder
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.MediaType.Companion.toMediaType
 
-data class JikanSearchResponse(
-    val data: List<JikanAnime>
+data class AniListResponse(
+    val data: AniListData
 )
 
-data class JikanAnime(
-    val mal_id: Int,
-    val title: String?,
-    val synopsis: String?,
-    val images: JikanImages?
+data class AniListData(
+    @JsonProperty("Page")
+    val page: AniListPage
 )
 
-data class JikanImages(
-    val jpg: JikanJpg?
+data class AniListPage(
+    val media: List<AniListMedia>
 )
 
-data class JikanJpg(
-    val image_url: String?
+data class AniListMedia(
+    val id: Int,
+    val title: AniListTitle,
+    val coverImage: AniListCover?
 )
 
-data class JikanEpisodesResponse(
-    val data: List<JikanEpisode>
+data class AniListTitle(
+    val romaji: String?,
+    val english: String?,
+    val native: String?
 )
 
-data class JikanEpisode(
-    val mal_id: Int,
-    val title: String?,
-    val episode: Int?
+data class AniListCover(
+    val large: String?
 )
 
 class TurkAnimeProvider : MainAPI() {
 
-    override var mainUrl = ProviderConfig.testApiBaseUrl
+    override var mainUrl = "https://graphql.anilist.co"
     override var name = "Turk Anime"
 
     override val supportedTypes = setOf(
@@ -53,97 +53,64 @@ class TurkAnimeProvider : MainAPI() {
     override var lang = "tr"
     override val hasMainPage = false
 
-    private suspend fun refreshConfig() {
-        ProviderConfig.refresh()
-        mainUrl = ProviderConfig.testApiBaseUrl
-    }
-
     override suspend fun search(query: String): List<SearchResponse> {
 
         if (query.isBlank()) {
             return emptyList()
         }
 
-        refreshConfig()
+        val graphqlQuery = """
+            query (${'$'}search: String) {
+                Page(page: 1, perPage: 20) {
+                    media(
+                        search: ${'$'}search,
+                        type: ANIME
+                    ) {
+                        id
+                        title {
+                            romaji
+                            english
+                            native
+                        }
+                        coverImage {
+                            large
+                        }
+                    }
+                }
+            }
+        """.trimIndent()
 
-        val encodedQuery = URLEncoder.encode(
-            query.trim(),
-            "UTF-8"
+        val body = mapOf(
+            "query" to graphqlQuery,
+            "variables" to mapOf(
+                "search" to query
+            )
+        ).toJson().toRequestBody(
+            "application/json".toMediaType()
         )
 
-        val response = app.get(
-            "$mainUrl/anime?q=$encodedQuery&limit=20"
+        val response = app.post(
+            mainUrl,
+            requestBody = body
         ).text
 
-        val result = parseJson<JikanSearchResponse>(response)
+        val result = parseJson<AniListResponse>(response)
 
-        return result.data.mapNotNull { anime ->
+        return result.data.page.media.mapNotNull { anime ->
 
-            val title = anime.title
-                ?: return@mapNotNull null
+            val title =
+                anime.title.english
+                    ?: anime.title.romaji
+                    ?: anime.title.native
+                    ?: return@mapNotNull null
 
             newAnimeSearchResponse(
                 title,
-                "jikan:${anime.mal_id}",
+                "anilist:${anime.id}",
                 TvType.Anime
             ) {
-                this.posterUrl = anime.images?.jpg?.image_url
+                this.posterUrl = anime.coverImage?.large
             }
-        }
-    }
-
-    override suspend fun load(url: String): LoadResponse {
-
-        refreshConfig()
-
-        val malId = url.removePrefix("jikan:")
-
-        val animeResponse = app.get(
-            "$mainUrl/anime/$malId/full"
-        ).text
-
-        val anime = parseJson<JikanAnime>(animeResponse)
-
-        val episodesResponse = app.get(
-            "$mainUrl/anime/$malId/episodes?limit=100"
-        ).text
-
-        val episodeData = parseJson<JikanEpisodesResponse>(
-            episodesResponse
-        )
-
-        val episodes = episodeData.data
-            .sortedBy {
-                it.episode ?: Int.MAX_VALUE
-            }
-            .mapNotNull { episode ->
-
-                val episodeNumber =
-                    episode.episode
-                        ?: return@mapNotNull null
-
-                newEpisode(
-                    "jikan-episode:${episode.mal_id}"
-                ) {
-                    this.name = episode.title
-                    this.episode = episodeNumber
-                }
-            }
-
-        return newAnimeLoadResponse(
-            anime.title ?: "Unknown",
-            url,
-            TvType.Anime
-        ) {
-            this.posterUrl =
-                anime.images?.jpg?.image_url
-
-            this.plot =
-                anime.synopsis
-
-            this.episodes = mutableMapOf(
-                com.lagradost.cloudstream3.DubStatus.Subbed to episodes
-            )
         }
     }
 }
